@@ -7,15 +7,14 @@ channels:
 dependencies:
   - python=3.11
   - pytorch
-  - pytorch-cuda=12.1
+  - cpuonly
   - pandas
   - pip
   - pip:
-      - --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/
-      - optimum[onnxruntime-gpu]
+      - optimum[onnxruntime]
       - fastapi==0.111.0
       - fasttext_wheel==0.9.2
-      - huggingface_hub==0.23.3
+      - huggingface_hub==0.24
       - lexicalrichness==0.5.1
       - numpy==1.26.4
       - pandas==2.2.2

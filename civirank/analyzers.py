@@ -84,13 +84,13 @@ class ToxicityAnalyzer():
     '''
         Class that loads a model to compute the toxicity of a text. It uses the unbiased toxic-roberta ONNX model from https://huggingface.co/protectai/unbiased-toxic-roberta-onnx. 
     '''
-    def __init__(self, model_id="joaopn/unbiased-toxic-roberta-onnx-fp16", file_name='model.onnx', gpu_id=0, download_models=True):
+    def __init__(self, model_id="protectai/unbiased-toxic-roberta-onnx", file_name='model.onnx', gpu_id=0, download_models=True):
         # Initialize the ONNX model and tokenizer with the specified model name
         if download_models == False:
             model_id = os.path.join('civirank', 'models', model_id.replace("/","_"))
-        self.model = ORTModelForSequenceClassification.from_pretrained(model_id, file_name=file_name, provider="CUDAExecutionProvider", provider_options={'device_id': gpu_id})
+        self.model = ORTModelForSequenceClassification.from_pretrained(model_id, file_name=file_name)
         self.tokenizer = AutoTokenizer.from_pretrained(model_id)
-        self.device = torch.device(f"cuda:{gpu_id}")
+        self.device = torch.device("cpu")
 
         # Find the index of the 'toxicity' label
         self.toxicity_index = next((idx for idx, label in self.model.config.id2label.items() if label.lower() == 'toxicity'), None)
@@ -141,7 +141,7 @@ class ProsocialityPolarizationAnalyzer():
         # Initialize the model
         if download_models == False:
             model_id = os.path.join('civirank', 'models', model_id.replace("/","_"))
-        self.model = SentenceTransformer(model_id, device="cuda")
+        self.model = SentenceTransformer(model_id)
         self.batch_size = 1024
         self.label_filter = label_filter
         # Load terms and compute their embeddings
