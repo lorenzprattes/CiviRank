@@ -21,10 +21,7 @@ class LocalRanker():
         # Set the warning urls for the scroll component
         if warning_urls is None:
             self.warning_urls = {
-                'reddit': {'id': '1bvin9r', 'url': 'https://www.reddit.com/r/test/comments/1bvin9r/'},
-                'twitter': {'id': '1776172261436727724', 'url': 'https://x.com/ScrollWarning/status/1776172261436727724'},
-                'facebook': {'id': '61557764711849', 'url': 'https://www.facebook.com/permalink.php?story_fbid=pfbid0qFdDR2P2mZjSvintqSqWGgzLRi14tvPt5ccYMFKu7BcNvkxEX7ZmufENH9QQrnnKl&id=61557764711849'}
-            }
+                'remark42': {'id': 'scroll-warning', 'url': 'https://scroll-warning.com'}}
         else:
             self.warning_urls = warning_urls
 
@@ -121,6 +118,69 @@ class LocalRanker():
 
         # Inserts a warning message for the scroll component
         insert_index = final_posts_df[final_posts_df['compound_score'] < scroll_warning_limit].first_valid_index()
+        if insert_index is not None:
+            id_platform = self.warning_urls[platform]['id']
+            new_row = pd.DataFrame({'id': id_platform, 'compound_score': scroll_warning_limit}, index=[insert_index - 0.5])
+            final_posts_df = pd.concat([final_posts_df.iloc[:insert_index], new_row, final_posts_df.iloc[insert_index:]]).reset_index(drop=True)
+
+
+        # Return full dataframe with original dataset and scores if DEBUG is True
+        if self.debug:
+            return final_posts_df
+
+        # Otherwise, return list of ids
+        if insert_index is not None:
+            return list(final_posts_df["id"]), [self.warning_urls[platform]]
+        else:
+            return list(final_posts_df["id"]), []
+
+    def rank_comments(self, comments, batch_size=16, scroll_warning_limit=-0.1):
+        platform = 'remark42'
+        print(comments, flush=True)
+
+        posts = parsers.parse_comments(comments, debug=self.debug)
+
+        # Splits the posts into ones that get reranked and ones that don't
+        parse_posts = posts[(posts.text.str.len() > 0)].copy()
+
+        # Process posts
+        parse_posts.loc[:, "trustworthiness"] = self.TrustworthinessAnalyzer.get_trustworthiness_scores(parse_posts)
+        parse_posts.loc[:, "toxicity"] = self.ToxicityAnalyzer.get_toxicity_scores(parse_posts, batch_size=batch_size)
+        parse_posts.loc[:, "polarization"] = self.ProsocialityPolarizationAnalyzer.get_similarity_polarization(parse_posts)
+        parse_posts.loc[:, "prosociality"] = self.ProsocialityPolarizationAnalyzer.get_similarity_prosocial(parse_posts)
+        parse_posts.loc[:, "mtld"] = self.LexicalDensityAnalyzer.get_mtld(parse_posts)
+
+        parse_posts = analyzers.normalize(parse_posts)
+
+        # Calculate the compound score
+        parse_posts["compound_score"] = parse_posts[self.scores].apply(analyzers.calculate_compound_score, args=(self.weights, self.min_scores), axis=1)
+
+        # Sort posts in descending order based on compound score
+        parse_posts = parse_posts.sort_values(by="compound_score", ascending=False)
+
+        # Create a list to store final posts in the correct order
+        final_posts = []
+        en_index = 0
+        non_en_index = 0
+
+        # Reinsert posts to their original positions
+        for idx in range(len(posts)):
+            if posts.iloc[idx]["lang"] == "en" and posts.iloc[idx]["text"].strip() != "":
+                final_posts.append(parse_posts.iloc[en_index])
+                en_index += 1
+            else:
+                final_posts.append(non_parse_posts.iloc[non_en_index])
+                non_en_index += 1
+
+        # Reset index for the final_posts list
+        final_posts_df = pd.DataFrame(final_posts).reset_index(drop=True)
+
+        # Inserts a warning message for the scroll component
+        insert_index = final_posts_df[final_posts_df['compound_score'] < scroll_warning_limit].first_valid_index()
+        
+        ranked_dict = {row["id"]: idx for idx, row in final_posts_df.iterrows()}
+        return ranked_dict, insert_index
+        
         if insert_index is not None:
             id_platform = self.warning_urls[platform]['id']
             new_row = pd.DataFrame({'id': id_platform, 'compound_score': scroll_warning_limit}, index=[insert_index - 0.5])

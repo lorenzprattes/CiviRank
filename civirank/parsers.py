@@ -24,6 +24,29 @@ def extract_domains(url_list):
     else:
         return [urlparse(url).netloc.replace("www.", "") for url in url_list if urlparse(url).scheme]
 
+def parse_comments(posts_json, lim=False, debug=False):
+    if lim:
+        posts_json = posts_json[0:lim]
+    IDs = [post.id for post in posts_json]
+    texts = [post.text for post in posts_json]
+    url_lists = [extract_urls(text) for text in texts]
+    domain_lists = [extract_domains(url_list) for url_list in url_lists]
+    lang = ["en" for post in posts_json]
+
+    posts = pd.DataFrame({
+        "id":IDs,
+        "text":texts,
+        "url":url_lists,
+        "domain":domain_lists,
+        "lang":lang
+    })
+    
+    if debug == True:
+        posts["original_rank"] = [post.get("original_rank") for post in posts_json]
+
+    return posts.reset_index(drop=True)
+
+    
 def parse_twitter_posts(posts_json, lim=False, debug=False):
     if lim:
         posts_json = posts_json[0:lim]
