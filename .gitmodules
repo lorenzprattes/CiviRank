@@ -1,0 +1,3 @@
+[submodule "celadon"]
+	path = celadon
+	url = https://huggingface.co/PleIAs/celadon
