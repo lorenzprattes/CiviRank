@@ -7,8 +7,8 @@ from huggingface_hub import hf_hub_download
 import numpy as np
 import os
 import fasttext
-from optimum.onnxruntime import ORTModelForSequenceClassification
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
+fasttext.FastText.eprint = lambda x: None
+from transformers import pipeline
 
 
 
@@ -86,14 +86,12 @@ class ToxicityAnalyzer():
         Class that loads a model to compute the toxicity of a text. It uses the unbiased toxic-roberta ONNX model from https://huggingface.co/protectai/unbiased-toxic-roberta-onnx. 
     '''
     def __init__(self, model_id="protectai/unbiased-toxic-roberta-onnx", file_name='model.onnx', gpu_id=0, download_models=True):
-        celadon_path = os.path.join(os.path.dirname(__file__), "models", "celadon")
+        celadon_path = os.path.join(os.path.dirname(__file__), "models", "PleIAs_celadon")
+
         if not os.path.exists(celadon_path):
             raise FileNotFoundError(f"The specified path to celadon model '{celadon_path}' does not exist.")
         self.device = torch.device("cpu")
         cwd = os.path.dirname(__file__)
-        self.tokenizer = AutoTokenizer.from_pretrained(celadon_path, trust_remote_code=True)
-        self.model = AutoModelForSequenceClassification.from_pretrained(celadon_path, trust_remote_code=True)
-        self.model.eval()
         self.pipe = pipeline("text-classification", model=celadon_path, trust_remote_code=True)
     def get_toxicity_scores(self, texts, batch_size=8):
         """ Analyze the given text or DataFrame and return toxicity scores """

@@ -8,6 +8,7 @@ import argparse
 import uvicorn
 import json
 from datetime import datetime
+from utils import Comment, Comments, RankingResponse
 
 
 

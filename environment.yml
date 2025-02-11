@@ -1,7 +1,6 @@
 name: ranker
 channels:
   - pytorch
-  - nvidia
   - conda-forge
   - defaults
 dependencies:
@@ -22,7 +21,7 @@ dependencies:
       - pydantic==2.7.4
       - ranking_challenge==2.0.0
       - sentence_transformers==3.0.1
-      - transformers==4.41.2
+      - transformers==4.45.2
       - uvicorn==0.30.1
       - simplejson
       - numexpr

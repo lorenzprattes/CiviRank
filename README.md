@@ -1,7 +1,22 @@
 # Civirank
 Repo for the Civirank ranker.
 
-# Submission form
+This is a extended version of civirank, with support for multiple languages, and a more generalized format for the API.
+
+# Getting Started
+If you are running locally, install the environment.yml with 
+```bash
+conda env create -f environment.yml
+conda activate myenv
+conda run -n ranker python model_download.py
+export $(grep -v '^#' .env | xargs)
+conda run -n ranker python start_server.py --port ${PORT} --batch_size ${BATCH_SIZE} --scroll_warning_limit ${SCROLL_WARNING_LIMIT} --no-download-models
+```
+for the dockerized setup, use `make build && make run`
+
+**Below, you can find the original README for the submission to the ranking contest:** 
+
+### Submission form
 
 * **Describe your algorithm. How will you reorder, add, and/or remove content?**  (Up to 250 words.)
 The overall goal of my algorithm is to create a balanced ranking that surfaces informative and friendly content whereas suppressing toxic and polarizing content or untrustworthy news items. To achieve this, I reorder content based on a compound score which is composed of five sub-scores for different content dimensions: toxicity, polarization, prosociality, trustworthiness and informativeness. Toxicity is currently measured using the Perspective API (to be changed to a locally run classifier). Polarization and prosociality are only measured for English language posts and measured as similarity between embeddings of English language polarization and prosociality dictionaries from the literature, and the post text. Trustworthiness is only assessed if a post contains a link to a news site and is measured on the domain level using NewsGuard ratings [might switch to Lin et al.]. Informativeness is measured using a standard measure for lexical diversity.
