@@ -8,7 +8,8 @@ import numpy as np
 import os
 import fasttext
 from optimum.onnxruntime import ORTModelForSequenceClassification
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
+
 
 
 class LexicalDensityAnalyzer():
@@ -64,12 +65,12 @@ class TrustworthinessAnalyzer():
             # domains contained in text but they are not news rated by NG?
             if len(ratings) == 0:
                 return np.nan
-                
+
             # domain(s) rated by NG contained in text: return average rating of
             # all rated domains
             else:
                 return np.mean(ratings)
-            
+
     def get_trustworthiness_scores(self, domains):
         assert type(domains) in [list, pd.core.frame.DataFrame]
         if type(domains) == list:
@@ -85,46 +86,29 @@ class ToxicityAnalyzer():
         Class that loads a model to compute the toxicity of a text. It uses the unbiased toxic-roberta ONNX model from https://huggingface.co/protectai/unbiased-toxic-roberta-onnx. 
     '''
     def __init__(self, model_id="protectai/unbiased-toxic-roberta-onnx", file_name='model.onnx', gpu_id=0, download_models=True):
-        # Initialize the ONNX model and tokenizer with the specified model name
-        if download_models == False:
-            model_id = os.path.join('civirank', 'models', model_id.replace("/","_"))
-        self.model = ORTModelForSequenceClassification.from_pretrained(model_id, file_name=file_name)
-        self.tokenizer = AutoTokenizer.from_pretrained(model_id)
+        celadon_path = os.path.join(os.path.dirname(__file__), "models", "celadon")
+        if not os.path.exists(celadon_path):
+            raise FileNotFoundError(f"The specified path to celadon model '{celadon_path}' does not exist.")
         self.device = torch.device("cpu")
-
-        # Find the index of the 'toxicity' label
-        self.toxicity_index = next((idx for idx, label in self.model.config.id2label.items() if label.lower() == 'toxicity'), None)
-        if self.toxicity_index is None:
-            raise ValueError("Toxicity label not found in model's id2label mapping.")
-
-    def get_toxicity_scores(self, text, batch_size=8):
+        cwd = os.path.dirname(__file__)
+        self.tokenizer = AutoTokenizer.from_pretrained(celadon_path, trust_remote_code=True)
+        self.model = AutoModelForSequenceClassification.from_pretrained(celadon_path, trust_remote_code=True)
+        self.model.eval()
+        self.pipe = pipeline("text-classification", model=celadon_path, trust_remote_code=True)
+    def get_toxicity_scores(self, texts, batch_size=8):
         """ Analyze the given text or DataFrame and return toxicity scores """
-        assert isinstance(text, (str, pd.DataFrame)), "Input should be either a string or a DataFrame"
+        assert isinstance(texts, (str, pd.DataFrame)), "Input should be either a string or a DataFrame"
+        if isinstance(texts, str):
+            texts = [texts]
 
-        if isinstance(text, str):
-            inputs = self.tokenizer([text], return_tensors="pt", padding=True, truncation=True, max_length=512)
-            input_ids = inputs['input_ids'].to(self.device)
-            attention_mask = inputs['attention_mask'].to(self.device)
-            with torch.no_grad():
-                outputs = self.model(input_ids, attention_mask=attention_mask)
-            probabilities = torch.sigmoid(outputs.logits)
-            return probabilities[0, self.toxicity_index].item()
-        else:
-            results = []
-            total_samples = len(text)
-            for start_idx in range(0, total_samples, batch_size):
-                end_idx = start_idx + batch_size
-                batch_texts = text["text"].iloc[start_idx:end_idx].tolist()
-                inputs = self.tokenizer(batch_texts, return_tensors="pt", padding=True, truncation=True, max_length=512)
-                input_ids = inputs['input_ids'].to(self.device)
-                attention_mask = inputs['attention_mask'].to(self.device)
-                with torch.no_grad():
-                    outputs = self.model(input_ids, attention_mask=attention_mask)
-                probabilities = torch.sigmoid(outputs.logits)
-                batch_results = probabilities[:, self.toxicity_index].cpu().numpy().tolist()
-                results.extend(batch_results)
+        results = []
+        total_samples = len(texts)
+        for text in texts['text']:
+            ratings = self.pipe(text)[0]
+            result = sum(ratings.values())
+            results.append(result)
 
-            return results
+        return results
 
 class ProsocialityPolarizationAnalyzer():
     '''

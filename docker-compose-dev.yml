@@ -1,5 +1,10 @@
 services:
   civirank:
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app/.
     image: civirank-civirank
     build:
       context: .

@@ -5,23 +5,27 @@
   "name": "Python 3",
   // Or use a Dockerfile or Docker Compose file.
   // More info: https://containers.dev/guide/dockerfile
-  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
- 
-  // Features to add to the dev container.
-  // More info: https://containers.dev/features.
-  "features": {
-    // https://github.com/devcontainers/features/tree/main/src/python
-    "ghcr.io/devcontainers/features/python:1": {
-      "installJupyterlab": true
-    },
-    "ghcr.io/devcontainers/features/git:1": {},
-    "ghcr.io/devcontainers/features/common-utils:2": {
-      "installZsh": true,
-      "configureZshAsDefaultShell": true,
-      "upgradePackages": true
-    },
-    "ghcr.io/devcontainers/features/anaconda:1": {},
-  },
+
+  "build": {
+    // Path is relative to the devcontainer.json file.
+    "dockerfile": "Dockerfile"
+},
+  // // Features to add to the dev container.
+  // // More info: https://containers.dev/features.
+  // "features": {
+  //   // https://github.com/devcontainers/features/tree/main/src/python
+  //   "ghcr.io/devcontainers/features/python:1": {
+  //     "installJupyterlab": true
+  //   },
+  //   "ghcr.io/devcontainers/features/git:1": {},
+  //   "ghcr.io/devcontainers/features/common-utils:2": {
+  //     "installZsh": true,
+  //     "configureZshAsDefaultShell": true,
+  //     "upgradePackages": true,
+  //     "username": "${localEnv:USER}"
+  //   },
+  //   "ghcr.io/devcontainers/features/anaconda:1": {}
+  // },
   "customizations": {
     "vscode": {
      "settings": {},
@@ -38,9 +42,9 @@
       "eamodio.gitlens",
       "yzhang.markdown-all-in-one",
       "foxundermoon.shell-format",
+      "shardulm94.trailing-spaces",
       "github.copilot",
-      "github.copilot-chat",
-      "golang.go"
+      "github.copilot-chat"
      ]
     }
    },

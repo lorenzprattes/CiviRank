@@ -1,5 +1,5 @@
 # Use an official NVIDIA CUDA base image with Ubuntu
-FROM nvidia/cuda:12.5.0-base-ubuntu22.04
+FROM python:3
 
 # Set the working directory
 WORKDIR /app
@@ -27,17 +27,11 @@ SHELL ["conda", "run", "-n", "ranker", "/bin/bash", "-c"]
 # Ensure the Python executable used is from the conda environment
 ENV PATH /miniconda/envs/ranker/bin:$PATH
 
-RUN conda run -n ranker pip install watchdog
-
-RUN useradd -ms /bin/sh -u 1001 app
-USER app
-
-
 # Copy the rest of your application's code
-COPY --chown=app:app . /app
+COPY . /app
 
 # Expose the port the app runs on
 EXPOSE 8000
 
 # Download the models
-RUN conda run -n ranker python model_download.py
+#RUN conda run -n ranker python model_download.py

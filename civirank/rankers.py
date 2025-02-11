@@ -21,7 +21,13 @@ class LocalRanker():
         # Set the warning urls for the scroll component
         if warning_urls is None:
             self.warning_urls = {
-                'remark42': {'id': 'scroll-warning', 'url': 'https://scroll-warning.com'}}
+                'remark42': {'id': 'scroll-warning', 'url': 'https://scroll-warning.com'},
+                #old
+                'reddit': {'id': '1bvin9r', 'url': 'https://www.reddit.com/r/test/comments/1bvin9r/'},
+                'twitter': {'id': '1776172261436727724', 'url': 'https://x.com/ScrollWarning/status/1776172261436727724'},
+                'facebook': {'id': '61557764711849', 'url': 'https://www.facebook.com/permalink.php?story_fbid=pfbid0qFdDR2P2mZjSvintqSqWGgzLRi14tvPt5ccYMFKu7BcNvkxEX7ZmufENH9QQrnnKl&id=61557764711849'}
+            }
+
         else:
             self.warning_urls = warning_urls
 

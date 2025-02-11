@@ -19,3 +19,4 @@ run:
 				$(DOCKER_COMPOSE) up
 clean:
 				$(DOCKER_COMPOSE) down --volumes --remove-orphans
+runDev: $(DOCKER_COMPOSE) up --watch
