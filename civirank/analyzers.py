@@ -2,7 +2,6 @@ import pandas as pd
 from lexicalrichness import LexicalRichness
 from sentence_transformers import SentenceTransformer, util
 import torch
-from huggingface_hub import hf_hub_download
 
 import numpy as np
 import os
@@ -28,14 +27,11 @@ class LexicalDensityAnalyzer():
         else:
             densities = []
             for i, row in text.iterrows():
-                if row["lang"] != "en":
+                lex = LexicalRichness(row["text"])
+                try:
+                    densities.append(lex.mtld())
+                except ZeroDivisionError:
                     densities.append(np.nan)
-                else:
-                    lex = LexicalRichness(row["text"])
-                    try:
-                        densities.append(lex.mtld())
-                    except ZeroDivisionError:
-                        densities.append(np.nan)
             return densities
 
 class TrustworthinessAnalyzer():
@@ -85,14 +81,14 @@ class ToxicityAnalyzer():
     '''
         Class that loads a model to compute the toxicity of a text. It uses the unbiased toxic-roberta ONNX model from https://huggingface.co/protectai/unbiased-toxic-roberta-onnx. 
     '''
-    def __init__(self, model_id="protectai/unbiased-toxic-roberta-onnx", file_name='model.onnx', gpu_id=0, download_models=True):
+    def __init__(self):
         celadon_path = os.path.join(os.path.dirname(__file__), "models", "PleIAs_celadon")
-
         if not os.path.exists(celadon_path):
-            raise FileNotFoundError(f"The specified path to celadon model '{celadon_path}' does not exist.")
+            raise FileNotFoundError(f"The specified path to celadon model '{celadon_path}' does not exist. Have you downloaded the model using model_download.py?")
         self.device = torch.device("cpu")
         cwd = os.path.dirname(__file__)
         self.pipe = pipeline("text-classification", model=celadon_path, trust_remote_code=True)
+
     def get_toxicity_scores(self, texts, batch_size=8):
         """ Analyze the given text or DataFrame and return toxicity scores """
         assert isinstance(texts, (str, pd.DataFrame)), "Input should be either a string or a DataFrame"
@@ -100,7 +96,6 @@ class ToxicityAnalyzer():
             texts = [texts]
 
         results = []
-        total_samples = len(texts)
         for text in texts['text']:
             ratings = self.pipe(text)[0]
             result = sum(ratings.values())
@@ -111,7 +106,7 @@ class ToxicityAnalyzer():
 class ProsocialityPolarizationAnalyzer():
     '''
         Class that loads a model to compute the similarity of a text to a prosociality and a polarization dictionary. The similarity is computed as the cosine similarity between the text embeddings and the dictionary embeddings. 
-        
+
         # Polarization
         Class that loads pre-calculated embeddings of the affective polarization dictionary from  https://academic.oup.com/pnasnexus/article/1/1/pgac019/6546199?login=false#381342977 and calculates similar embeddings using GloVe for a given text. It exposes a function get_similarity_polarization() that calculates the cosine similarity between the averaged dictionary embeddings and the text embedding following the DDR approach (see https://doi.org/10.3758/s13428-017-0875-9). The function returns a single floating point value between -1 and+1, with values closer to -1 meaning a text is less similar to polarizing language whereas values closer to +1 are more similar to polarizing language.
 
@@ -119,10 +114,12 @@ class ProsocialityPolarizationAnalyzer():
         Similar to the polarization class, it loads a dictionary of prosocial terms and calculates the cosine similarity between the averaged dictionary embeddings and the text embeddings. The function get_similarity_prosocial() returns a single floating point value between -1 and +1, with values closer to -1 meaning a text is less similar to prosocial language whereas values closer to +1 are more similar to prosocial language.
     '''
 
-    def __init__(self, model_id = 'joaopn/glove-model-reduced-stopwords', label_filter = 'issue', download_models=True):
+    def __init__(self, model_id = 'joaopn/glove-model-reduced-stopwords', label_filter = 'issue', language="en"):
         # Initialize the model
-        if download_models == False:
-            model_id = os.path.join('civirank', 'models', model_id.replace("/","_"))
+        model_id = os.path.join('civirank', 'models', model_id.replace("/","_"))
+        if not os.path.exists(model_id):
+            raise FileNotFoundError(f"The specified path to celadon model '{model_id}' does not exist. Have you downloaded the model using model_download.py?")
+        self.language = language
         self.model = SentenceTransformer(model_id)
         self.batch_size = 1024
         self.label_filter = label_filter
@@ -130,16 +127,15 @@ class ProsocialityPolarizationAnalyzer():
         self.load_prosocial()
         self.load_polarization()
 
-
-
     def load_prosocial(self):
         # Load terms from CSV
         current_dir = os.path.dirname(__file__)
-        fname = "prosocial_dictionary.csv"
+        fname = "prosocial_dictionary_" + self.language + ".csv"
         filepath = os.path.join(current_dir, 'data', fname)
+        if not os.path.exists(filepath):
+            raise FileNotFoundError(f"The specified path to celadon model '{model_id}' does not exist. Have you downloaded the model using model_download.py?")
         prosocial_dict = pd.read_csv(filepath, header=None, names = ['word'])
         prosocial_dict["word"] = prosocial_dict["word"].str.replace("*", "")
-        prosocial_dict["word"] = prosocial_dict["word"].str.replace("nt", "not")
         prosocial_dict = list(prosocial_dict["word"].values)
 
         # Compute embeddings for the unique words
@@ -149,20 +145,20 @@ class ProsocialityPolarizationAnalyzer():
             show_progress_bar=False,
             convert_to_tensor=True
         )
-        
+
         # Average the embeddings to create a single dictionary embedding
         self.dict_embeddings_prosocial = torch.mean(self.dict_embeddings, dim=0)
 
     def load_polarization(self):
         # Load terms from CSV
         current_dir = os.path.dirname(__file__)
-        fname = "polarization_dictionary.csv"
+        fname = "polarization_dictionary_" + self.language + ".csv"
         filepath = os.path.join(current_dir, 'data', fname)
         df = pd.read_csv(filepath, header=0)
         if self.label_filter is not None:
             df = df[df['label'] == self.label_filter]
         unique_words = df['word'].unique()
-        
+
         # Compute embeddings for the unique words
         self.dict_embeddings = self.model.encode(
             list(unique_words),
@@ -170,7 +166,7 @@ class ProsocialityPolarizationAnalyzer():
             show_progress_bar=False,
             convert_to_tensor=True
         )
-        
+
         # Average the embeddings to create a single dictionary embedding
         self.dict_embeddings_polarization = torch.mean(self.dict_embeddings, dim=0)
 
@@ -178,7 +174,7 @@ class ProsocialityPolarizationAnalyzer():
         # Regular expressions to clean up the text data
         df["text"] = df["text"].replace(
             to_replace=[r"(?:https?:\/\/(?:www\.|(?!www))[^\s\.]+\.[^\s]{2,}|www\.[^\s]+\.[^\s]{2,})"],
-            value=[""], 
+            value=[""],
             regex=True,
         )
         df["text"] = df["text"].replace(to_replace=r"&.*;", value="", regex=True)
@@ -191,13 +187,12 @@ class ProsocialityPolarizationAnalyzer():
         corpus_embeddings = self.model.encode(
             list(df["text"]),
             batch_size=self.batch_size,
-            show_progress_bar=False, 
+            show_progress_bar=False,
             convert_to_tensor=True
-        ) 
-
+        )
         assert len(corpus_embeddings) == len(df)
         return corpus_embeddings
-    
+
     def get_similarity_prosocial(self, texts):
         df = texts.copy()
         self.preprocess(df)
@@ -211,17 +206,6 @@ class ProsocialityPolarizationAnalyzer():
         text_embeddings = self.get_embeddings(df)
         cos_sim = util.cos_sim(text_embeddings, self.dict_embeddings_polarization)
         return cos_sim.cpu().numpy()
-
-class LanguageAnalyzer():
-    def __init__(self, model_id = "facebook/fasttext-language-identification", filename="model.bin", download_models=True):
-        if download_models == False:
-            model_path = os.path.join('civirank', 'models', model_id.replace("/","_"), filename)
-        else:
-            model_path = hf_hub_download(repo_id=model_id, filename=filename)
-        self.model = fasttext.load_model(model_path)
-
-    def detect_language(self, text):
-        return self.model.predict(text)[0][0].replace("__label__", "").split("_")[0][0:2]
 
 def winsorize(val, bottom_limit, top_limit):
     if val < bottom_limit:
@@ -243,28 +227,28 @@ def normalize(posts):
     posts["prosociality"] = (posts["prosociality"] + 1) / 2
     # scale mtld to be in [0, 1] for easier handling
     posts["mtld"] = posts["mtld"] / posts["mtld"].max()
-    
+
     # winsorize scores
     bottom_limit = 0.1
     top_limit = 0.9
 
     for col in ["toxicity", "polarization", "mtld", "prosociality"]:
         posts[col] = posts[col].apply(
-            winsorize, 
+            winsorize,
             args=(posts[col].quantile(q=bottom_limit),
                   posts[col].quantile(q=top_limit))
         )
-    
+
         # rescale score to be in [0, 1] after removing outliers
         # this assumes that the score was in [0, 1] before winsorizing
         posts[col] = posts[col] - posts[col].min()
         posts[col] = posts[col] / posts[col].max()
-        
+
     # revert score: high toxicity is good
     posts["toxicity"] = 1 - posts["toxicity"]
     # shift and rescale toxicity to be in [-1, 1]
     posts["toxicity"] = (posts["toxicity"] * 2) - 1
-    
+
     # revert score: high polarization is good
     posts["polarization"] = 1 - posts["polarization"]
     # shift and rescale polarization to be in [-1, 1]
@@ -272,20 +256,20 @@ def normalize(posts):
 
     # shift and rescale prosociality to be in [-1, 1]
     posts["prosociality"] = (posts["prosociality"] * 2) - 1
-    
+
     # shift and rescale mtld to be in [-1, 1]
     posts["mtld"] = (posts["mtld"] * 2) - 1
 
     # shift and rescale trustworthiness to be in [-1, 1]
     posts["trustworthiness"] = (posts["trustworthiness"] * 2) - 1
-    
+
     posts = posts.rename(columns={"toxicity":"no_toxicity", "polarization":"no_polarization"})
     return posts
 
 def calculate_compound_score(row, weights, min_scores):
     if len(row.dropna()) < min_scores:
         return np.nan
-        
+
     norm = 0
     compound_score = 0
     for score in weights.keys():

@@ -14,6 +14,11 @@ conda run -n ranker python start_server.py --port ${PORT} --batch_size ${BATCH_S
 ```
 for the dockerized setup, use `make build && make run`
 
+# Generating Polarization and Prosociality Dicitionaries
+
+Polarization: https://chatgpt.com/share/67b22b0f-aed4-8002-bffb-2383826fef8
+Prosociality: https://chatgpt.com/share/67b22b7a-c990-8002-9544-9d3528ca5abf
+
 **Below, you can find the original README for the submission to the ranking contest:** 
 
 ### Submission form
