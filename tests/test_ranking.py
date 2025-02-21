@@ -26,7 +26,7 @@ def input_comments():
 @pytest.fixture
 def ranker():
     # Initialize the LocalRanker
-    return LocalRanker(download_models=False)
+    return LocalRanker()
 
 def test_rank(ranker, input_files_platforms):
     for file_path in input_files_platforms:
@@ -38,6 +38,8 @@ def test_rank(ranker, input_files_platforms):
 
         # Check if the output is not empty
         assert ranked_results is not None
+
+
         #assert len(ranked_results) == len(comments_data)
 
         # Optionally, you can add more assertions to check the content of the results
@@ -58,6 +60,11 @@ def test_rank_comments(ranker, input_comments):
         assert ranked_results is not None
         #assert len(ranked_results) == len(comments_data)
 
+        comments_map = {comment.id: comment for comment in comments.comments}
+
+        # Reorder comments_data based on the order of IDs in ranked_results
+        ordered_comments = [comments_map[ranked.id] for ranked in ranked_results]
+        print(ordered_comments)
         # Optionally, you can add more assertions to check the content of the results
         #for result in ranked_results:
         #    assert "compound_score" in result

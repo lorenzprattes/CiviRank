@@ -35,6 +35,7 @@ class LocalRanker():
 
         # Debug flag
         self.debug = debug
+        print("Civirank initialized!", flush=True)
 
     def rank_comments(self, comments, batch_size=16, scroll_warning_limit=-0.1):
 
@@ -59,8 +60,7 @@ class LocalRanker():
 
         # Sort posts in descending order based on compound score
         ranked_posts = parse_posts.sort_values(by="compound_score", ascending=False)
-        for idx, row in ranked_posts.iterrows():
-            print(row["text"][:20]+"compound" + row["compound_score"] +"trust" +  row["trustworthiness"] +"toxic" +  row["no_toxicity"] +"polar" +  row["no_polarization"] +"prosocia" +  row["prosociality"], +"mltd" +  row["mtld"], flush=True)
+
         # extracts the first post with a compound score below the scroll_warning_limit
         insert_index = ranked_posts[ranked_posts['compound_score'] < scroll_warning_limit].first_valid_index()
         if insert_index is None:
@@ -68,3 +68,4 @@ class LocalRanker():
 
         ranked_dict = {row["id"]: idx for idx, row in ranked_posts.iterrows()}
         return ranked_dict, insert_index
+

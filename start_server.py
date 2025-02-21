@@ -23,7 +23,6 @@ if __name__ == '__main__':
     parser.add_argument('--port', type=int, default=8000, help='Port number')
     parser.add_argument('--scroll_warning_limit', type=float, default=-0.1, help='Scroll warning limit')
     parser.add_argument('--batch_size', type=int, default=8, help='Batch size')
-    parser.add_argument('--no-download-models', action='store_false', dest='download_models', help='Skip downloading models, use models from disk instead')
     parser.add_argument('--language', type=str, default='en', help='Language for the models')
 
     args = parser.parse_args()

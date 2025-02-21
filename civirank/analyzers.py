@@ -89,7 +89,7 @@ class ToxicityAnalyzer():
         cwd = os.path.dirname(__file__)
         self.pipe = pipeline("text-classification", model=celadon_path, trust_remote_code=True)
 
-    def get_toxicity_scores(self, texts, batch_size=8):
+    def get_toxicity_scores(self, texts):
         """ Analyze the given text or DataFrame and return toxicity scores """
         assert isinstance(texts, (str, pd.DataFrame)), "Input should be either a string or a DataFrame"
         if isinstance(texts, str):
@@ -133,7 +133,7 @@ class ProsocialityPolarizationAnalyzer():
         fname = "prosocial_dictionary_" + self.language + ".csv"
         filepath = os.path.join(current_dir, 'data', fname)
         if not os.path.exists(filepath):
-            raise FileNotFoundError(f"The specified path to celadon model '{model_id}' does not exist. Have you downloaded the model using model_download.py?")
+            raise FileNotFoundError(f"The specified path to prosocial dictionary '{filepath}' does not exist.")
         prosocial_dict = pd.read_csv(filepath, header=None, names = ['word'])
         prosocial_dict["word"] = prosocial_dict["word"].str.replace("*", "")
         prosocial_dict = list(prosocial_dict["word"].values)
@@ -154,6 +154,8 @@ class ProsocialityPolarizationAnalyzer():
         current_dir = os.path.dirname(__file__)
         fname = "polarization_dictionary_" + self.language + ".csv"
         filepath = os.path.join(current_dir, 'data', fname)
+        if not os.path.exists(filepath):
+            raise FileNotFoundError(f"The specified path to polarization dictionary '{filepath}' does not exist.")
         df = pd.read_csv(filepath, header=0)
         if self.label_filter is not None:
             df = df[df['label'] == self.label_filter]
