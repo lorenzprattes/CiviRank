@@ -6,13 +6,6 @@ class Comment(BaseModel):
     id: str = Field(
         description="A unique ID describing a specific piece of content."
     )
-    parent_id: Optional[str] = Field(
-        description="For threaded comments, this identifies the comment to which this one is a reply. Blank for top-level comments.",
-        default=None,
-    )
-    title: Optional[str] = Field(
-        description="The post title, only available on reddit posts.", default=None
-    )
     text: str = Field(
         description="The text of the content item. Assume UTF-8, and that leading and trailing whitespace have been trimmed."
     )

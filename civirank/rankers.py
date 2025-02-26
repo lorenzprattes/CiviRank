@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 class LocalRanker():
-    def __init__(self, weights=None, lim=False, min_scores=0, debug=False, language="en"):
+    def __init__(self, weights=None, lim=False, min_scores=0, debug=False, language="en", model_id="celadon"):
 
         # Set the weights for the different scores
         if weights is None:
@@ -19,8 +19,10 @@ class LocalRanker():
             self.weights = weights
 
         self.language=language
+        print(f"Language set to {language}", flush=True)
         self.TrustworthinessAnalyzer = analyzers.TrustworthinessAnalyzer()
-        self.ToxicityAnalyzer = analyzers.ToxicityAnalyzer()
+        print(f"ToxicityAnalyzer set to {model_id}", flush=True)
+        self.ToxicityAnalyzer = analyzers.ToxicityAnalyzer(model_id)
         self.ProsocialityPolarizationAnalyzer = analyzers.ProsocialityPolarizationAnalyzer(language=self.language)
         self.LexicalDensityAnalyzer = analyzers.LexicalDensityAnalyzer()
 
@@ -46,7 +48,7 @@ class LocalRanker():
 
         # Process posts
         parse_posts.loc[:, "trustworthiness"] = self.TrustworthinessAnalyzer.get_trustworthiness_scores(parse_posts)
-        parse_posts.loc[:, "toxicity"] = self.ToxicityAnalyzer.get_toxicity_scores(parse_posts, batch_size=batch_size)
+        parse_posts.loc[:, "toxicity"] = self.ToxicityAnalyzer.get_toxicity_scores(parse_posts)
         parse_posts.loc[:, "polarization"] = self.ProsocialityPolarizationAnalyzer.get_similarity_polarization(parse_posts)
         parse_posts.loc[:, "prosociality"] = self.ProsocialityPolarizationAnalyzer.get_similarity_prosocial(parse_posts)
         parse_posts.loc[:, "mtld"] = self.LexicalDensityAnalyzer.get_mtld(parse_posts)

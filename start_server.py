@@ -24,11 +24,20 @@ if __name__ == '__main__':
     parser.add_argument('--scroll_warning_limit', type=float, default=-0.1, help='Scroll warning limit')
     parser.add_argument('--batch_size', type=int, default=8, help='Batch size')
     parser.add_argument('--language', type=str, default='en', help='Language for the models')
+    parser.add_argument('--model_id', type=str, help='Model ID for the toxicity analyzer')
 
+    available_models = ["celadon", "jagoldz/gahd", "textdetox/xlmr-large-toxicity-classifier"]
     args = parser.parse_args()
 
+    if args.language == "" or args.language == None:
+        args.language = "en"
+    if args.model_id == "" or args.model_id == None:
+        args.model_id = "celadon"
+    elif args.model_id not in available_models:
+        raise ValueError(f"Model ID {args.model_id} not in available models {available_models}")
+
     # Initialize the ranker instance with the download_models argument
-    ranker = rankers.LocalRanker(language=args.language)
+    ranker = rankers.LocalRanker(language=args.language, model_id=args.model_id)
 
     # Define routes after initializing the ranker
     @app.post('/rank_comments')

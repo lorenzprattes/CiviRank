@@ -1,7 +1,5 @@
 from urllib.parse import urlparse
 import re
-from pathlib import Path
-import json
 
 import pandas as pd
 import numpy as np
@@ -37,7 +35,7 @@ def parse_comments(posts_json, lim=False, debug=False):
         "text":texts,
         "url":url_lists,
         "domain":domain_lists,
-    })
+    }) 
     
     posts["text"] = posts["text"].str.lower()
     posts["text"] = posts["text"].str.strip()

@@ -81,13 +81,16 @@ class ToxicityAnalyzer():
     '''
         Class that loads a model to compute the toxicity of a text. It uses the unbiased toxic-roberta ONNX model from https://huggingface.co/protectai/unbiased-toxic-roberta-onnx. 
     '''
-    def __init__(self):
-        celadon_path = os.path.join(os.path.dirname(__file__), "models", "PleIAs_celadon")
-        if not os.path.exists(celadon_path):
-            raise FileNotFoundError(f"The specified path to celadon model '{celadon_path}' does not exist. Have you downloaded the model using model_download.py?")
+    def __init__(self, model_id = 'celadon'):
         self.device = torch.device("cpu")
-        cwd = os.path.dirname(__file__)
-        self.pipe = pipeline("text-classification", model=celadon_path, trust_remote_code=True)
+        self.model_id = model_id
+        if model_id == 'celadon':
+            celadon_path = os.path.join(os.path.dirname(__file__), "models", "PleIAs_celadon")
+            if not os.path.exists(celadon_path):
+                raise FileNotFoundError(f"The specified path to celadon model '{celadon_path}' does not exist. Have you downloaded the model using model_download.py?")
+            self.pipe = pipeline("text-classification", model=celadon_path, trust_remote_code=True)
+        else:
+            self.pipe = pipeline("text-classification", model=model_id)
 
     def get_toxicity_scores(self, texts):
         """ Analyze the given text or DataFrame and return toxicity scores """
@@ -97,8 +100,13 @@ class ToxicityAnalyzer():
 
         results = []
         for text in texts['text']:
-            ratings = self.pipe(text)[0]
-            result = sum(ratings.values())
+            result = np.nan
+            if self.model_id == 'celadon':
+                result = sum(self.pipe(text)[0].values())
+            if self.model_id == 'jagoldz/gahd':
+                result = 10 if self.pipe(text)[0]['label'] == "LABEL_1" else 0
+            if self.model_id == "textdetox/xlmr-large-toxicity-classifier":
+                result = 10 if self.pipe(text)[0]['label'] == "toxic" else 0
             results.append(result)
 
         return results

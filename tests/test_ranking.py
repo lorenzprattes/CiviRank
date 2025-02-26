@@ -26,7 +26,7 @@ def input_comments():
 @pytest.fixture
 def ranker():
     # Initialize the LocalRanker
-    return LocalRanker()
+    return LocalRanker(model_id="textdetox/xlmr-large-toxicity-classifier")
 
 def test_rank(ranker, input_files_platforms):
     for file_path in input_files_platforms:

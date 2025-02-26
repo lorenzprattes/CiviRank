@@ -17,6 +17,7 @@ services:
       SCROLL_WARNING_LIMIT: "${SCROLL_WARNING_LIMIT}"
       LANGUAGE: "{LANGUAGE}"
       PORT: "${PORT}"
+      MODEL_ID: "${MODEL_ID}"
     command: [
       "python", "-m", "watchdog.watchmedo", "auto-restart",
       "--recursive",
@@ -28,6 +29,7 @@ services:
       "--batch_size", "${BATCH_SIZE}",
       "--scroll_warning_limit", "${SCROLL_WARNING_LIMIT}",
       "--language", "${LANGUAGE}",
+      "--model_id", "${MODEL_ID}"
 
     ]
     networks:
