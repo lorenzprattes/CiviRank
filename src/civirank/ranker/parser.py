@@ -1,6 +1,5 @@
 from urllib.parse import urlparse
 import re
-
 import pandas as pd
 import numpy as np
 

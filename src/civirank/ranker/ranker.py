@@ -1,9 +1,6 @@
-from civirank import analyzers, parsers
-from ranking_challenge.request import RankingRequest
-import numpy as np
-import pandas as pd
+from . import analyzers, parser
 
-class LocalRanker():
+class CiviRank():
     def __init__(self, weights=None, lim=False, min_scores=0, debug=False, language="en", model_id="celadon"):
 
         # Set the weights for the different scores
@@ -39,9 +36,9 @@ class LocalRanker():
         self.debug = debug
         print("Civirank initialized!", flush=True)
 
-    def rank_comments(self, comments, batch_size=16, scroll_warning_limit=-0.1):
+    def rank(self, comments, batch_size=16, scroll_warning_limit=-0.1):
 
-        posts = parsers.parse_comments(comments, debug=self.debug)
+        posts = parser.parse_comments(comments, debug=self.debug)
 
         # Splits the posts into ones that get reranked and ones that don't
         parse_posts = posts[(posts.text.str.len() > 0)].copy()

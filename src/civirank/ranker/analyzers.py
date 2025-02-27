@@ -2,12 +2,12 @@ import pandas as pd
 from lexicalrichness import LexicalRichness
 from sentence_transformers import SentenceTransformer, util
 import torch
-
 import numpy as np
 import os
 import fasttext
-fasttext.FastText.eprint = lambda x: None
+fasttext.FastText.eprint = lambda x: None #todo remove
 from transformers import pipeline
+from pathlib import Path
 
 
 
@@ -39,10 +39,9 @@ class TrustworthinessAnalyzer():
         Class that loads a trustworthiness analyzer using the domain scores from https://doi.org/10.1093/pnasnexus/pgad286, avaiable at https://github.com/hauselin/domain-quality-ratings. It exposes a function to calculate the trustworthiness of links contained in a post. It returns a single floating point value between 0 and 1 as trustworthiness score. A higher value means a more trustworthy link. If multiple links are contained in a post and indexed in the NewsGuard data base, the average trustworthiness rating is returned. We remove the following domains from the csv file: youtube.com,facebook.com,google.com
     '''
     def __init__(self):
-        current_dir = os.path.dirname(__file__)
         fname = "domain_pc1.csv"
-        filepath = os.path.join(current_dir, 'data', 'domain_pc1.csv')
-
+        parent_dir = Path(__file__).resolve().parent.parent
+        filepath = parent_dir / 'data' / fname
         # print current working directory
         self.scores = pd.read_csv(filepath, usecols=["domain", "pc1"])
         self.scores = self.scores.set_index("domain")
@@ -85,8 +84,9 @@ class ToxicityAnalyzer():
         self.device = torch.device("cpu")
         self.model_id = model_id
         if model_id == 'celadon':
-            celadon_path = os.path.join(os.path.dirname(__file__), "models", "PleIAs_celadon")
-            if not os.path.exists(celadon_path):
+            parent_dir = Path(__file__).resolve().parent.parent
+            celadon_path = parent_dir / 'models' / "PleIAs_celadon"
+            if not celadon_path.exists():
                 raise FileNotFoundError(f"The specified path to celadon model '{celadon_path}' does not exist. Have you downloaded the model using model_download.py?")
             self.pipe = pipeline("text-classification", model=celadon_path, trust_remote_code=True)
         else:
@@ -124,9 +124,10 @@ class ProsocialityPolarizationAnalyzer():
 
     def __init__(self, model_id = 'joaopn/glove-model-reduced-stopwords', label_filter = 'issue', language="en"):
         # Initialize the model
-        model_id = os.path.join('civirank', 'models', model_id.replace("/","_"))
-        if not os.path.exists(model_id):
-            raise FileNotFoundError(f"The specified path to celadon model '{model_id}' does not exist. Have you downloaded the model using model_download.py?")
+        parent_dir = Path(__file__).resolve().parent.parent
+        filepath = parent_dir / 'models' / model_id.replace("/","_")
+        if not filepath.exists:
+            raise FileNotFoundError(f"The specified path to glove model '{filepath}' does not exist. Have you downloaded the model using model_download.py?")
         self.language = language
         self.model = SentenceTransformer(model_id)
         self.batch_size = 1024
@@ -137,9 +138,9 @@ class ProsocialityPolarizationAnalyzer():
 
     def load_prosocial(self):
         # Load terms from CSV
-        current_dir = os.path.dirname(__file__)
+        parent_dir = Path(__file__).resolve().parent.parent
         fname = "prosocial_dictionary_" + self.language + ".csv"
-        filepath = os.path.join(current_dir, 'data', fname)
+        filepath = parent_dir / 'data' / fname
         if not os.path.exists(filepath):
             raise FileNotFoundError(f"The specified path to prosocial dictionary '{filepath}' does not exist.")
         prosocial_dict = pd.read_csv(filepath, header=None, names = ['word'])
@@ -159,9 +160,9 @@ class ProsocialityPolarizationAnalyzer():
 
     def load_polarization(self):
         # Load terms from CSV
-        current_dir = os.path.dirname(__file__)
+        parent_dir = Path(__file__).resolve().parent.parent
         fname = "polarization_dictionary_" + self.language + ".csv"
-        filepath = os.path.join(current_dir, 'data', fname)
+        filepath = parent_dir /'data' / fname
         if not os.path.exists(filepath):
             raise FileNotFoundError(f"The specified path to polarization dictionary '{filepath}' does not exist.")
         df = pd.read_csv(filepath, header=0)

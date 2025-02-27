@@ -10,7 +10,7 @@ conda env create -f environment.yml
 conda activate myenv
 conda run -n ranker python model_download.py
 export $(grep -v '^#' .env | xargs)
-conda run -n ranker python start_server.py --port ${PORT} --batch_size ${BATCH_SIZE} --scroll_warning_limit ${SCROLL_WARNING_LIMIT} --no-download-models
+conda run -n ranker python --port {PORT} --batch_size {BATCH_SIZE} --scroll_warning_limit {SCROLL_WARNING_LIMIT} --language {LANGUAGE} --model_id {MODEL_ID}
 ```
 for the dockerized setup, use `make build && make run`
 

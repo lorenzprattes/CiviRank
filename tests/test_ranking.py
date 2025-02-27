@@ -1,13 +1,13 @@
 import pytest
 import sys
 sys.path.append('../civirank')
-from civirank.rankers import LocalRanker
+from civirank.ranker import CiviRank
 import pandas as pd
 import os
 import json
 from pydantic.tools import parse_obj_as
 sys.path.append('..')
-from utils import Comment, Comments, RankingResponse
+from src.civirank.utils import Comment, Comments, RankingResponse
 
 @pytest.fixture
 def input_files_platforms():
@@ -26,7 +26,7 @@ def input_comments():
 @pytest.fixture
 def ranker():
     # Initialize the LocalRanker
-    return LocalRanker(model_id="textdetox/xlmr-large-toxicity-classifier")
+    return CiviRank(model_id="textdetox/xlmr-large-toxicity-classifier")
 
 def test_rank(ranker, input_files_platforms):
     for file_path in input_files_platforms:

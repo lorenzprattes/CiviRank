@@ -14,7 +14,7 @@ services:
       PORT: "${PORT}"
       MODEL_ID: "${MODEL_ID}"
     command: [
-      "python", "start_server.py",
+      "python","-m", "civirank.server",
       "--port", "${PORT}",
       "--batch_size", "${BATCH_SIZE}",
       "--scroll_warning_limit", "${SCROLL_WARNING_LIMIT}",
@@ -22,8 +22,8 @@ services:
       "--model_id", "${MODEL_ID}",
     ]
     networks:
-      - network1
+      - network
 networks:
-  network1:
+  network:
     name: dev-network
     external: true
