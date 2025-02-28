@@ -134,7 +134,10 @@ class ProsocialityPolarizationAnalyzer():
         self.label_filter = label_filter
         # Load terms and compute their embeddings
         self.load_prosocial()
+        print("Prosociality Analyzer initialized")
         self.load_polarization()
+        print("Polarization Analyzer initialized")
+
 
     def load_prosocial(self):
         # Load terms from CSV
@@ -151,7 +154,7 @@ class ProsocialityPolarizationAnalyzer():
         self.dict_embeddings = self.model.encode(
             prosocial_dict,
             batch_size=self.batch_size,
-            show_progress_bar=False,
+            show_progress_bar=True,
             convert_to_tensor=True
         )
 
@@ -174,7 +177,7 @@ class ProsocialityPolarizationAnalyzer():
         self.dict_embeddings = self.model.encode(
             list(unique_words),
             batch_size=self.batch_size,
-            show_progress_bar=False,
+            show_progress_bar=True,
             convert_to_tensor=True
         )
 

@@ -17,10 +17,12 @@ class CiviRank():
 
         self.language=language
         print(f"Language set to {language}", flush=True)
+
         self.TrustworthinessAnalyzer = analyzers.TrustworthinessAnalyzer()
-        print(f"ToxicityAnalyzer set to {model_id}", flush=True)
         self.ToxicityAnalyzer = analyzers.ToxicityAnalyzer(model_id)
+        print(f"ToxicityAnalyzer set to {model_id}", flush=True)
         self.ProsocialityPolarizationAnalyzer = analyzers.ProsocialityPolarizationAnalyzer(language=self.language)
+        print("Prosociality and Polarization Analyzers initialized")
         self.LexicalDensityAnalyzer = analyzers.LexicalDensityAnalyzer()
 
         # Scores that are considered in the compound score
