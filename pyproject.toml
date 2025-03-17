@@ -1,7 +1,7 @@
 [project]
 name = "civirank"
 version = "0.1.0"
-description = "A ranking library with a minimal server."
+description = "A comment ranker with a minimal server."
 authors = [{ name="Lorenz Prattes", email="lorenz.prattes@student.tugraz.at" }, { name="Jana Lasser", email="jana.lasser@uni-graz.at" }, { name="Joao Pinheiro Neto", email="joaoxp@gmail.com" }]
 dependencies = [
     "torch==2.5.1",
@@ -17,6 +17,22 @@ dependencies = [
     "pydantic==2.7.4",
     "pytest==8.3.4",
     "watchdog"
+]
+
+[project.optional-dependencies]
+evaluation = [
+    "ipykernel",
+    "matplotlib",
+    "seaborn",
+    "requests",
+    "random_username",
+    "ipywidgets",
+    "google-api-python-client",
+    "powerlaw",
+]
+
+dependencies = [
+   "evaluation @ file:///${PROJECT_ROOT}/evaluation"
 ]
 
 [build-system]

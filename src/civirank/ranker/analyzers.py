@@ -89,6 +89,14 @@ class ToxicityAnalyzer():
             if not celadon_path.exists():
                 raise FileNotFoundError(f"The specified path to celadon model '{celadon_path}' does not exist. Have you downloaded the model using model_download.py?")
             self.pipe = pipeline("text-classification", model=celadon_path, trust_remote_code=True)
+        elif model_id == "detoxify":
+            self.pipe = pipeline(
+            'text-classification', 
+            model='unitary/multilingual-toxic-xlm-roberta', 
+            tokenizer='xlm-roberta-base', 
+            function_to_apply='sigmoid', 
+            return_all_scores=True
+            )
         else:
             self.pipe = pipeline("text-classification", model=model_id)
 
@@ -101,12 +109,25 @@ class ToxicityAnalyzer():
         results = []
         for text in texts['text']:
             result = np.nan
-            if self.model_id == 'celadon':
-                result = sum(self.pipe(text)[0].values())
+            if self.model_id == 'celadon'or self.model_id == 'PleIAs/celadon':
+                #this evaluation is based on the section "Pre-Training Data Curation" here https://arxiv.org/pdf/2410.22587
+                scores = self.pipe(text)[0].values()
+                total_score = sum(scores)
+                max_score = max(scores)
+                if total_score == 0:
+                    result = 0
+                elif total_score <= 3 and max_score <= 2:
+                    result = 1/3  # No Toxicity
+                elif (4 <= total_score <= 6) or (total_score == 3 and max_score == 3):
+                    result = 2/3  # Mild Toxicity
+                elif total_score >= 7:
+                    result = 1  # Toxic Content
             if self.model_id == 'jagoldz/gahd':
-                result = 10 if self.pipe(text)[0]['label'] == "LABEL_1" else 0
+                result = 1 if self.pipe(text)[0]['label'] == "LABEL_1" else 0
             if self.model_id == "textdetox/xlmr-large-toxicity-classifier":
-                result = 10 if self.pipe(text)[0]['label'] == "toxic" else 0
+                result = 1 if self.pipe(text)[0]['label'] == "toxic" else 0
+            if self.model_id == "unitary/multilingual-toxic-xlm-roberta":
+                result = self.pipe(text)[0]['toxic']
             results.append(result)
 
         return results
@@ -134,9 +155,7 @@ class ProsocialityPolarizationAnalyzer():
         self.label_filter = label_filter
         # Load terms and compute their embeddings
         self.load_prosocial()
-        print("Prosociality Analyzer initialized")
         self.load_polarization()
-        print("Polarization Analyzer initialized")
 
 
     def load_prosocial(self):
@@ -246,7 +265,7 @@ def normalize(posts):
     bottom_limit = 0.1
     top_limit = 0.9
 
-    for col in ["toxicity", "polarization", "mtld", "prosociality"]:
+    for col in ["polarization", "mtld", "prosociality"]:
         posts[col] = posts[col].apply(
             winsorize,
             args=(posts[col].quantile(q=bottom_limit),
@@ -280,7 +299,7 @@ def normalize(posts):
     posts = posts.rename(columns={"toxicity":"no_toxicity", "polarization":"no_polarization"})
     return posts
 
-def calculate_compound_score(row, weights, min_scores):
+def calculate_compound_score(row, weights, min_scores, debug=False):
     if len(row.dropna()) < min_scores:
         return np.nan
 
