@@ -10,7 +10,7 @@ class CiviRank():
                 "no_polarization": 1,
                 "mtld": 0.5,
                 "trustworthiness": 2,
-                "prosociality": 0.5
+                "prosociality": 1
             }
         else:
             self.weights = weights

@@ -2,6 +2,7 @@ evaluation/data/
 evaluation/*.json
 models/
 test
+evaluation/temp/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

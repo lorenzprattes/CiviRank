@@ -14,7 +14,6 @@ USER appuser
 # ENV PATH="/home/appuser/venv/bin:$PATH"
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -e .
-
 EXPOSE 8000
 
 CMD ["python", "/scripts/model_download.py"]

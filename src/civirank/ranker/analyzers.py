@@ -8,6 +8,7 @@ import fasttext
 fasttext.FastText.eprint = lambda x: None #todo remove
 from transformers import pipeline
 from pathlib import Path
+import spacy
 
 
 
@@ -150,8 +151,12 @@ class ProsocialityPolarizationAnalyzer():
         if not filepath.exists:
             raise FileNotFoundError(f"The specified path to glove model '{filepath}' does not exist. Have you downloaded the model using model_download.py?")
         self.language = language
-        self.model = SentenceTransformer(model_id)
-        self.batch_size = 1024
+        self.model = SentenceTransformer("distiluse-base-multilingual-cased-v2")
+        self.nlp = None
+        if language == "en":
+            self.nlp = spacy.load("en_core_web_md")
+        if language == "ger":
+            self.nlp = spacy.load("de_core_news_md")
         self.label_filter = label_filter
         # Load terms and compute their embeddings
         self.load_prosocial()
@@ -172,7 +177,6 @@ class ProsocialityPolarizationAnalyzer():
         # Compute embeddings for the unique words
         self.dict_embeddings = self.model.encode(
             prosocial_dict,
-            batch_size=self.batch_size,
             show_progress_bar=True,
             convert_to_tensor=True
         )
@@ -195,7 +199,6 @@ class ProsocialityPolarizationAnalyzer():
         # Compute embeddings for the unique words
         self.dict_embeddings = self.model.encode(
             list(unique_words),
-            batch_size=self.batch_size,
             show_progress_bar=True,
             convert_to_tensor=True
         )
@@ -214,12 +217,12 @@ class ProsocialityPolarizationAnalyzer():
         df["text"] = df["text"].replace(to_replace=[r"\\t|\\n|\\r", "\t|\n|\r"], value=["",""], regex=True) 
         df["text"] = df["text"].replace(to_replace=r"\s+", value=" ", regex=True)
         df["text"] = df["text"].replace(to_replace=r"\@\w+", value="@user", regex=True)
+        df["text"] = df["text"].apply(lambda x: " ".join([token.lemma_ for token in self.nlp(x)]))
 
     def get_embeddings(self, df):
         # Encode text in batches
         corpus_embeddings = self.model.encode(
             list(df["text"]),
-            batch_size=self.batch_size,
             show_progress_bar=False,
             convert_to_tensor=True
         )
