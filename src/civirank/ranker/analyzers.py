@@ -118,11 +118,14 @@ class ToxicityAnalyzer():
                 if total_score == 0:
                     result = 0
                 elif total_score <= 3 and max_score <= 2:
-                    result = 1/3  # No Toxicity
-                elif (4 <= total_score <= 6) or (total_score == 3 and max_score == 3):
-                    result = 2/3  # Mild Toxicity
-                elif total_score >= 7:
-                    result = 1  # Toxic Content
+                    result = total_score / 9
+                elif (4 <= total_score <= 6): # Mild Toxicity
+                    result = total_score / 9 
+                elif (total_score == 3 and max_score == 3):# Mild Toxicity
+                    result = 5 / 9
+                elif total_score >= 7:   # Toxic Content
+                    total_score = total_score / 9 if total_score < 9 else 1
+                    result = 1
             if self.model_id == 'jagoldz/gahd':
                 result = 1 if self.pipe(text)[0]['label'] == "LABEL_1" else 0
             if self.model_id == "textdetox/xlmr-large-toxicity-classifier":

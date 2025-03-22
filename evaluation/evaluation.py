@@ -197,6 +197,44 @@ class EvaluationDataGenerator():
     tree = pd.DataFrame(tree_list)
     return tree
 
+  def extract_leaves_to_parent_scores(self, leaves, scores):
+    tree = self.build_tree_sorted_by(scores, sort_by="CiviRank")
+    tree["thread"] = -1 
+    tree["childs"] = ""
+    parents = tree[tree["Parent_Id"].eq("")]
+    if len(parents) == len(tree):
+      return
+    for i, row in parents.iterrows():
+      subtree = tree.loc[i+1:]
+      if len(subtree) == 0:
+        continue
+      filtered_index = subtree[subtree["Parent_Id"].eq("")].index
+      childs_over = filtered_index[0] if not filtered_index.empty else None
+      if childs_over is None:
+        if i == len(tree):
+          continue
+        elif i+ 1 == childs_over:
+          continue
+        else:
+          childs_over = len(tree)
+      elif childs_over - i <= 1:
+        continue
+
+      thread = tree.loc[i:childs_over-1]
+      childs =  thread[1:]
+      childs_avg = childs["CiviScore"].mean()
+      childs_median = childs["CiviScore"].median()
+      warning = childs["Warning"].eq("Warning").any()
+      new_row = pd.DataFrame({
+          "parent_id": [row["Post_Id"]],
+          "parent_civiscore": [row["CiviScore"]],
+          "childs_avg_civiscore": [childs_avg],
+          "childs_median_civiscore": [childs_median],
+          "warning": [warning],
+      })
+      leaves = pd.concat([leaves, new_row], ignore_index=True)
+    return leaves
+
 class EvaluationCollector():
   def __init__(self, PERSPECTIVE_API_KEY, OPENAI_API_KEY):
     self.client = discovery.build(

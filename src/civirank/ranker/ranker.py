@@ -1,7 +1,7 @@
 from . import analyzers, parser
 
 class CiviRank():
-    def __init__(self, weights=None, lim=False, min_scores=0, debug=False, language="en", model_id="celadon", scroll_warning_limit=-0.2,):
+    def __init__(self, weights=None, lim=False, min_scores=0, debug=False, language="en", model_id="celadon", scroll_warning_limit=-0.16,):
 
         # Set the weights for the different scores
         if weights is None:
