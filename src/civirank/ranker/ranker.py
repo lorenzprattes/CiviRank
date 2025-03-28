@@ -1,7 +1,8 @@
 from . import analyzers, parser
+from .. import utils
 
 class CiviRank():
-    def __init__(self, weights=None, lim=False, min_scores=0, debug=False, language="en", model_id="celadon", scroll_warning_limit=-0.16,):
+    def __init__(self, weights=None, lim=False, min_scores=0, debug=False, language="en", model_id="celadon", scroll_warning_limit=None,):
 
         # Set the weights for the different scores
         if weights is None:
@@ -17,7 +18,7 @@ class CiviRank():
 
         self.language=language
         print(f"Language set to {language}", flush=True)
-
+        #utils.download_models(language, model_id)
         self.TrustworthinessAnalyzer = analyzers.TrustworthinessAnalyzer()
         self.ToxicityAnalyzer = analyzers.ToxicityAnalyzer(model_id)
         print(f"ToxicityAnalyzer set to {model_id}", flush=True)
@@ -31,9 +32,13 @@ class CiviRank():
         # Minimum number of scores a post needs to have to be considered in the compound score
         self.min_scores = min_scores
 
-        # Limit the number of posts to be analyzed
-        self.lim = lim
-        self.scroll_warning_limit = scroll_warning_limit
+        self.scroll_warning_limit = 0
+
+        if language == "en":
+            self.scroll_warning_limit = 0.16
+        elif language == "de":
+            self.scroll_warning_limit = -0.16
+
         # Debug flag
         self.debug = debug
         print("Civirank initialized!", flush=True)
@@ -43,7 +48,7 @@ class CiviRank():
         posts = parser.parse_comments(comments, debug=self.debug)
         if scroll_warning_limit is None:
             scroll_warning_limit = self.scroll_warning_limit
-
+        print("Scroll Warning Limit:", scroll_warning_limit, flush=True)
         # Splits the posts into ones that get reranked and ones that don't
         parse_posts = posts[(posts.text.str.len() > 0)].copy()
 
@@ -68,7 +73,10 @@ class CiviRank():
         if insert_index is None:
             insert_index = -1
 
-
+        print("Ranking finished, Warning positioned at: ", insert_index, flush=True)
+        print_dict = {row["id"]: {"rank": idx, "score": row["compound_score"]} for idx, row in ranked_posts.iterrows()}
+        print(print_dict, flush=True)
+        
         if debug:
             ranked_dict = {row["id"]: {"rank": idx, "score": row["compound_score"]} for idx, row in ranked_posts.iterrows()}
             for score in self.scores:

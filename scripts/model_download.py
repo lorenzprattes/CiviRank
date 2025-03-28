@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import argparse
 import subprocess
+import spacy
 
 repos = [{"repo_id": "joaopn/glove-model-reduced-stopwords", "revision": None},
     {"repo_id": "PleIAs/celadon", "revision": "refs/pr/2"}]
@@ -13,24 +14,25 @@ parser.add_argument(
     "--language",
     default="en",
     help="Specify the language for the spacy pipeline (currently available: 'en', 'ger').",
+    required=False
 )
 
 args = parser.parse_args()
+language = args.language or os.getenv("LANGUAGE", "en")
 
 # Define repositories based on the language
 model = None
-if args.language == "en":
+if language == "en":
     model = "en_core_web_md"
-elif args.language == "ger":
+elif language == "ger":
     model = "de_core_news_md"
 else:
     raise ValueError(f"Unsupported language: {args.language}")
 
-subprocess.run(["python", "-m", "spacy", "download", model], check=True)
-
 
 parent_dir = Path(__file__).resolve().parent.parent
 filepath = parent_dir / 'src' / 'civirank' / 'models'
+
 
 for repo in repos:
     try:
@@ -42,3 +44,5 @@ for repo in repos:
         raise e
 
 print("Downloaded models successfully")
+
+

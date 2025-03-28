@@ -231,6 +231,7 @@ class EvaluationDataGenerator():
           "childs_avg_civiscore": [childs_avg],
           "childs_median_civiscore": [childs_median],
           "warning": [warning],
+          "childs_count": [len(childs)]
       })
       leaves = pd.concat([leaves, new_row], ignore_index=True)
     return leaves

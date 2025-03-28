@@ -1,16 +1,13 @@
+import subprocess
 import pandas as pd
 from lexicalrichness import LexicalRichness
 from sentence_transformers import SentenceTransformer, util
 import torch
 import numpy as np
 import os
-import fasttext
-fasttext.FastText.eprint = lambda x: None #todo remove
 from transformers import pipeline
 from pathlib import Path
 import spacy
-
-
 
 class LexicalDensityAnalyzer():
     def __init__(self):

@@ -8,7 +8,6 @@ services:
       - "${PORT}:8000"
       - "5678:5678"
     environment:
-      BATCH_SIZE: "${BATCH_SIZE}"
       SCROLL_WARNING_LIMIT: "${SCROLL_WARNING_LIMIT}"
       LANGUAGE: "${LANGUAGE}"
       PORT: "${PORT}"
@@ -16,14 +15,7 @@ services:
     command: [
       "python","-m", "civirank.server",
       "--port", "${PORT}",
-      "--batch_size", "${BATCH_SIZE}",
       "--scroll_warning_limit", "${SCROLL_WARNING_LIMIT}",
       "--language", "${LANGUAGE}",
       "--model_id", "${MODEL_ID}",
     ]
-    networks:
-      - network
-networks:
-  network:
-    name: dev-network
-    external: true
