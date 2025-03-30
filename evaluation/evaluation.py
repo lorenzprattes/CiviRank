@@ -165,6 +165,14 @@ class EvaluationDataGenerator():
       right_on="Post_Id",
       validate="one_to_one"
     )
+    merged = pd.merge(
+      merged,
+      ranked_posts[["id", "trustworthiness", "no_toxicity", "no_polarization", "prosociality", "mtld", "compound_score"]],
+      how="inner",
+      left_on="Post_Id",
+      right_on="id",
+      validate="one_to_one"
+    )
     merged["Warning"] = merged["Warning"].astype(str)
     return merged
 

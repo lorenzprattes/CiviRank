@@ -1,3 +1,4 @@
+import spacy
 from . import analyzers, parser
 from .. import utils
 
@@ -9,7 +10,7 @@ class CiviRank():
             self.weights = {
                 "no_toxicity": 1,
                 "no_polarization": 1,
-                "mtld": 0.5,
+                "mtld": 0.25,
                 "trustworthiness": 2,
                 "prosociality": 1
             }
@@ -18,6 +19,14 @@ class CiviRank():
 
         self.language=language
         print(f"Language set to {language}", flush=True)
+        self.nlp = None
+        if language == "en":
+            self.nlp = spacy.load("en_core_web_md")
+        if language == "ger":
+            self.nlp = spacy.load("de_core_news_md")
+
+
+
         #utils.download_models(language, model_id)
         self.TrustworthinessAnalyzer = analyzers.TrustworthinessAnalyzer()
         self.ToxicityAnalyzer = analyzers.ToxicityAnalyzer(model_id)
@@ -35,9 +44,9 @@ class CiviRank():
         self.scroll_warning_limit = 0
 
         if language == "en":
-            self.scroll_warning_limit = 0.16
+            self.scroll_warning_limit = -0.2
         elif language == "de":
-            self.scroll_warning_limit = -0.16
+            self.scroll_warning_limit = -0.2
 
         # Debug flag
         self.debug = debug
@@ -48,18 +57,19 @@ class CiviRank():
         posts = parser.parse_comments(comments, debug=self.debug)
         if scroll_warning_limit is None:
             scroll_warning_limit = self.scroll_warning_limit
-        print("Scroll Warning Limit:", scroll_warning_limit, flush=True)
         # Splits the posts into ones that get reranked and ones that don't
         parse_posts = posts[(posts.text.str.len() > 0)].copy()
 
         # Process posts
+        parse_posts["preprocessed_text"] = analyzers.preprocess(parse_posts["text"], nlp=self.nlp)
+
         parse_posts.loc[:, "trustworthiness"] = self.TrustworthinessAnalyzer.get_trustworthiness_scores(parse_posts)
         parse_posts.loc[:, "toxicity"] = self.ToxicityAnalyzer.get_toxicity_scores(parse_posts)
-        parse_posts.loc[:, "polarization"] = self.ProsocialityPolarizationAnalyzer.get_similarity_polarization(parse_posts)
-        parse_posts.loc[:, "prosociality"] = self.ProsocialityPolarizationAnalyzer.get_similarity_prosocial(parse_posts)
-        parse_posts.loc[:, "mtld"] = self.LexicalDensityAnalyzer.get_mtld(parse_posts)
+        parse_posts.loc[:, "polarization"] = self.ProsocialityPolarizationAnalyzer.get_similarity_polarization(parse_posts, col="preprocessed_text")
+        parse_posts.loc[:, "prosociality"] = self.ProsocialityPolarizationAnalyzer.get_similarity_prosocial(parse_posts, col="preprocessed_text")
+        parse_posts.loc[:, "mtld"] = self.LexicalDensityAnalyzer.get_mtld(parse_posts, col="preprocessed_text")
 
-        parse_posts = analyzers.normalize(parse_posts)
+        parse_posts = analyzers.scale(parse_posts)
 
         # Calculate the compound score
         parse_posts["compound_score"] = parse_posts[self.scores].apply(analyzers.calculate_compound_score, args=(self.weights, self.min_scores, debug), axis=1)
@@ -73,10 +83,6 @@ class CiviRank():
         if insert_index is None:
             insert_index = -1
 
-        print("Ranking finished, Warning positioned at: ", insert_index, flush=True)
-        print_dict = {row["id"]: {"rank": idx, "score": row["compound_score"]} for idx, row in ranked_posts.iterrows()}
-        print(print_dict, flush=True)
-        
         if debug:
             ranked_dict = {row["id"]: {"rank": idx, "score": row["compound_score"]} for idx, row in ranked_posts.iterrows()}
             for score in self.scores:

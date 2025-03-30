@@ -13,8 +13,8 @@ class LexicalDensityAnalyzer():
     def __init__(self):
         pass
 
-    def get_mtld(self, text):
-         # copying approach from here https://github.com/notnews/unreadable_news
+    def get_mtld(self, text, col="text"):
+        # copying approach from here https://github.com/notnews/unreadable_news
         assert type(text) in [str, pd.core.frame.DataFrame]
         if type(text) == str:
             lex = LexicalRichness(text)
@@ -25,7 +25,12 @@ class LexicalDensityAnalyzer():
         else:
             densities = []
             for i, row in text.iterrows():
-                lex = LexicalRichness(row["text"])
+                lex = None
+                if row[col] != "text":
+                    list_of_tokens = row[col].split(" ")
+                    lex = LexicalRichness(list_of_tokens, preprocessor=None, tokenizer=None)
+                else:
+                    lex = LexicalRichness(row[col])
                 try:
                     densities.append(lex.mtld())
                 except ZeroDivisionError:
@@ -115,13 +120,12 @@ class ToxicityAnalyzer():
                 if total_score == 0:
                     result = 0
                 elif total_score <= 3 and max_score <= 2:
-                    result = total_score / 9
+                    result = total_score / 6
                 elif (4 <= total_score <= 6): # Mild Toxicity
-                    result = total_score / 9 
+                    result = total_score / 7
                 elif (total_score == 3 and max_score == 3):# Mild Toxicity
-                    result = 5 / 9
+                    result = 5 / 7
                 elif total_score >= 7:   # Toxic Content
-                    total_score = total_score / 9 if total_score < 9 else 1
                     result = 1
             if self.model_id == 'jagoldz/gahd':
                 result = 1 if self.pipe(text)[0]['label'] == "LABEL_1" else 0
@@ -144,7 +148,7 @@ class ProsocialityPolarizationAnalyzer():
         Similar to the polarization class, it loads a dictionary of prosocial terms and calculates the cosine similarity between the averaged dictionary embeddings and the text embeddings. The function get_similarity_prosocial() returns a single floating point value between -1 and +1, with values closer to -1 meaning a text is less similar to prosocial language whereas values closer to +1 are more similar to prosocial language.
     '''
 
-    def __init__(self, model_id = 'joaopn/glove-model-reduced-stopwords', label_filter = 'issue', language="en"):
+    def __init__(self, model_id = 'joaopn/glove-model-reduced-stopwords', label_filter = 'issue', language="en", nlp=None):
         # Initialize the model
         parent_dir = Path(__file__).resolve().parent.parent
         filepath = parent_dir / 'models' / model_id.replace("/","_")
@@ -152,11 +156,6 @@ class ProsocialityPolarizationAnalyzer():
             raise FileNotFoundError(f"The specified path to glove model '{filepath}' does not exist. Have you downloaded the model using model_download.py?")
         self.language = language
         self.model = SentenceTransformer("distiluse-base-multilingual-cased-v2")
-        self.nlp = None
-        if language == "en":
-            self.nlp = spacy.load("en_core_web_md")
-        if language == "ger":
-            self.nlp = spacy.load("de_core_news_md")
         self.label_filter = label_filter
         # Load terms and compute their embeddings
         self.load_prosocial()
@@ -206,20 +205,7 @@ class ProsocialityPolarizationAnalyzer():
         # Average the embeddings to create a single dictionary embedding
         self.dict_embeddings_polarization = torch.mean(self.dict_embeddings, dim=0)
 
-    def preprocess(self, df):
-        # Regular expressions to clean up the text data
-        df["text"] = df["text"].replace(
-            to_replace=[r"(?:https?:\/\/(?:www\.|(?!www))[^\s\.]+\.[^\s]{2,}|www\.[^\s]+\.[^\s]{2,})"],
-            value=[""],
-            regex=True,
-        )
-        df["text"] = df["text"].replace(to_replace=r"&.*;", value="", regex=True)
-        df["text"] = df["text"].replace(to_replace=[r"\\t|\\n|\\r", "\t|\n|\r"], value=["",""], regex=True) 
-        df["text"] = df["text"].replace(to_replace=r"\s+", value=" ", regex=True)
-        df["text"] = df["text"].replace(to_replace=r"\@\w+", value="@user", regex=True)
-        df["text"] = df["text"].apply(lambda x: " ".join([token.lemma_ for token in self.nlp(x)]))
-
-    def get_embeddings(self, df):
+    def get_embeddings(self, df, col):
         # Encode text in batches
         corpus_embeddings = self.model.encode(
             list(df["text"]),
@@ -229,19 +215,31 @@ class ProsocialityPolarizationAnalyzer():
         assert len(corpus_embeddings) == len(df)
         return corpus_embeddings
 
-    def get_similarity_prosocial(self, texts):
+    def get_similarity_prosocial(self, texts, col="text"):
         df = texts.copy()
-        self.preprocess(df)
-        text_embeddings = self.get_embeddings(df)
+        text_embeddings = self.get_embeddings(df, col)
         cos_sim = util.cos_sim(text_embeddings, self.dict_embeddings_prosocial)
         return cos_sim.cpu().numpy()
 
-    def get_similarity_polarization(self, texts):
+    def get_similarity_polarization(self, texts, col="text"):
         df = texts.copy()
-        self.preprocess(df)
-        text_embeddings = self.get_embeddings(df)
+        text_embeddings = self.get_embeddings(df, col)
         cos_sim = util.cos_sim(text_embeddings, self.dict_embeddings_polarization)
         return cos_sim.cpu().numpy()
+
+def preprocess(text_series, nlp):
+    text_series.copy()
+    cleaned_text = text_series.replace(
+        to_replace=[r"(?:https?:\/\/(?:www\.|(?!www))[^\s\.]+\.[^\s]{2,}|www\.[^\s]+\.[^\s]{2,})"],
+        value=[""],
+        regex=True,
+    )
+    cleaned_text = cleaned_text.replace(to_replace=r"&.*;", value="", regex=True)
+    cleaned_text = cleaned_text.replace(to_replace=[r"\\t|\\n|\\r", "\t|\n|\r"], value=["",""], regex=True)
+    cleaned_text = cleaned_text.replace(to_replace=r"\s+", value=" ", regex=True)
+    cleaned_text = cleaned_text.replace(to_replace=r"\@\w+", value="@user", regex=True)
+    cleaned_text = cleaned_text.apply(lambda x: " ".join([token.lemma_ for token in nlp(x)]))
+    return cleaned_text
 
 def winsorize(val, bottom_limit, top_limit):
     if val < bottom_limit:
@@ -251,7 +249,11 @@ def winsorize(val, bottom_limit, top_limit):
     else:
         return val
 
-def normalize(posts):
+def min_max(x, min, max, bottom_aim, top_aim):
+  return ((x - min) * (top_aim - bottom_aim)) / (max - min)
+
+
+def scale(posts):
     '''
         We rescale all scores to be in the range [-1, 1] with negative values
         being undesirable and positive values being desirable. We also rename
@@ -261,24 +263,26 @@ def normalize(posts):
     posts["polarization"] = (posts["polarization"] + 1) / 2
     # scale prosociality to be in [0, 1] for easier handling
     posts["prosociality"] = (posts["prosociality"] + 1) / 2
-    # scale mtld to be in [0, 1] for easier handling
-    posts["mtld"] = posts["mtld"] / posts["mtld"].max()
+    # scale mtld to be in [0, 1] for easier handling, divide by 200 as a far above average value for mtld deducted from the data evaluated
+    posts["mtld"] = posts["mtld"].apply(lambda x: x/60 - 15/60)
+    posts["mtld"] = posts["mtld"].apply(lambda x: min(x, 1)) # 50 (75 percent quantile of our datas mtld) as 1, 0 as -0.15
 
-    # winsorize scores
-    bottom_limit = 0.1
-    top_limit = 0.9
 
-    for col in ["polarization", "mtld", "prosociality"]:
-        posts[col] = posts[col].apply(
-            winsorize,
-            args=(posts[col].quantile(q=bottom_limit),
-                  posts[col].quantile(q=top_limit))
-        )
+    # # winsorize scores
+    # bottom_limit = 0.1
+    # top_limit = 0.9
 
-        # rescale score to be in [0, 1] after removing outliers
-        # this assumes that the score was in [0, 1] before winsorizing
-        posts[col] = posts[col] - posts[col].min()
-        posts[col] = posts[col] / posts[col].max()
+    # for col in ["polarization", "mtld", "prosociality"]:
+    #     posts[col] = posts[col].apply(
+    #         winsorize,
+    #         args=(posts[col].quantile(q=bottom_limit),
+    #               posts[col].quantile(q=top_limit))
+    #     )
+
+        # # rescale score to be in [0, 1] after removing outliers
+        # # this assumes that the score was in [0, 1] before winsorizing
+        # posts[col] = posts[col] - posts[col].min()
+        # posts[col] = posts[col] / posts[col].max()
 
     # revert score: high toxicity is good
     posts["toxicity"] = 1 - posts["toxicity"]
@@ -289,9 +293,18 @@ def normalize(posts):
     posts["polarization"] = 1 - posts["polarization"]
     # shift and rescale polarization to be in [-1, 1]
     posts["polarization"] = (posts["polarization"] * 2) - 1
-
     # shift and rescale prosociality to be in [-1, 1]
     posts["prosociality"] = (posts["prosociality"] * 2) - 1
+
+    # rescale accoriding to observed min max values in our data, specific to german
+    posts['polarization'] = posts['polarization'].apply(lambda x: min_max(x, 0, -0.3, 0, -1))
+    posts['prosociality'] = posts['prosociality'].apply(lambda x: min_max(x, 0, 0.3, 0, 1))
+    #set scores exceeding 1 or -1 to 1 or -1
+    posts['polarization'] = posts['polarization'].apply(lambda x: 1 if x > 1 else x)
+    posts['polarization'] = posts['polarization'].apply(lambda x: -1 if x < -1 else x)
+    posts['prosociality'] = posts['prosociality'].apply(lambda x: 1 if x > 1 else x)
+    posts['prosociality'] = posts['prosociality'].apply(lambda x: -1 if x < -1 else x)
+
 
     # shift and rescale mtld to be in [-1, 1]
     posts["mtld"] = (posts["mtld"] * 2) - 1
