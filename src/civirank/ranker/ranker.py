@@ -9,10 +9,10 @@ class CiviRank():
         if weights is None:
             self.weights = {
                 "no_toxicity": 1,
-                "no_polarization": 1,
-                "mtld": 0.25,
+                "no_polarization": 2,
+                "mtld": 0.5,
                 "trustworthiness": 2,
-                "prosociality": 1
+                "prosociality": 2
             }
         else:
             self.weights = weights
@@ -20,14 +20,12 @@ class CiviRank():
         self.language=language
         print(f"Language set to {language}", flush=True)
         self.nlp = None
+
         if language == "en":
             self.nlp = spacy.load("en_core_web_md")
         if language == "ger":
             self.nlp = spacy.load("de_core_news_md")
 
-
-
-        #utils.download_models(language, model_id)
         self.TrustworthinessAnalyzer = analyzers.TrustworthinessAnalyzer()
         self.ToxicityAnalyzer = analyzers.ToxicityAnalyzer(model_id)
         print(f"ToxicityAnalyzer set to {model_id}", flush=True)
@@ -41,12 +39,9 @@ class CiviRank():
         # Minimum number of scores a post needs to have to be considered in the compound score
         self.min_scores = min_scores
 
-        self.scroll_warning_limit = 0
-
-        if language == "en":
-            self.scroll_warning_limit = -0.2
-        elif language == "de":
-            self.scroll_warning_limit = -0.2
+        self.scroll_warning_limit = scroll_warning_limit
+        if scroll_warning_limit is None:
+            self.scroll_warning_limit = -0.1
 
         # Debug flag
         self.debug = debug
