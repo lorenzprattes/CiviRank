@@ -1,0 +1,50 @@
+[project]
+name = "civirank"
+version = "0.1.0"
+description = "A comment ranker with a minimal server."
+authors = [{ name="Lorenz Prattes", email="lorenz.prattes@student.tugraz.at" }, { name="Jana Lasser", email="jana.lasser@uni-graz.at" }, { name="Joao Pinheiro Neto", email="joaoxp@gmail.com" }]
+dependencies = [
+    "torch==2.5.1",
+    "fastapi==0.111.0",
+    "sentence_transformers==3.0.1",
+    "transformers==4.45.2",
+    "uvicorn==0.30.1",
+    "fasttext_wheel==0.9.2",
+    "huggingface_hub==0.24",
+    "lexicalrichness==0.5.1",
+    "numpy==1.26.4",
+    "pandas==2.2.2",
+    "pydantic==2.7.4",
+    "pytest==8.3.4",
+    "watchdog",
+    "spacy"
+]
+
+[project.optional-dependencies]
+evaluation = [
+    "ipykernel",
+    "matplotlib",
+    "seaborn",
+    "requests",
+    "random_username",
+    "ipywidgets",
+    "google-api-python-client",
+    "powerlaw",
+]
+
+dependencies = [
+   "evaluation @ file:///${PROJECT_ROOT}/evaluation"
+]
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+
+requires-python = ">=3.8"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

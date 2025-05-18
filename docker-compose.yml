@@ -1,0 +1,21 @@
+services:
+  civirank:
+    image: civirank-civirank
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT}:8000"
+      - "5678:5678"
+    environment:
+      SCROLL_WARNING_LIMIT: "${SCROLL_WARNING_LIMIT}"
+      LANGUAGE: "${LANGUAGE}"
+      PORT: "${PORT}"
+      MODEL_ID: "${MODEL_ID}"
+    command: [
+      "python","-m", "civirank.server",
+      "--port", "${PORT}",
+      "--scroll_warning_limit", "${SCROLL_WARNING_LIMIT}",
+      "--language", "${LANGUAGE}",
+      "--model_id", "${MODEL_ID}",
+    ]
