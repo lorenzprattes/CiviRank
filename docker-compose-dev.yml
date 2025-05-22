@@ -19,11 +19,11 @@ services:
       PORT: "${PORT}"
       MODEL_ID: "${MODEL_ID}"
     command: [
-      # "python", "-m", "watchdog.watchmedo", "auto-restart",
-      # "--recursive",
-      # "--patterns=*.py",
-      # "--ignore-patterns=*.pyc",
-      # "--",
+      "python", "-m", "watchdog.watchmedo", "auto-restart",
+      "--recursive",
+      "--patterns=*.py",
+      "--ignore-patterns=*.pyc",
+      "--",
       "python","-m", "civirank.server",
       "--port", "${PORT}",
       "--scroll_warning_limit", "${SCROLL_WARNING_LIMIT}",
@@ -31,9 +31,3 @@ services:
       "--model_id", "${MODEL_ID}"
 
     ]
-#     networks:
-#       - network1
-# networks:
-#   network1:
-#     name: dev-network
-#     external: true

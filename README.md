@@ -1,23 +1,16 @@
-# Civirank
-Repo for the Civirank ranker.
+# CiviRank
 
 This is a extended version of civirank, with support for multiple languages, and a more generalized format for the API.
 
 # Getting Started
-If you are running locally, install the environment.yml with 
+For developing locally, run
 ```bash
-conda env create -f environment.yml
-conda activate myenv
-conda run -n ranker python model_download.py
-export $(grep -v '^#' .env | xargs)
-conda run -n ranker python --port {PORT} --batch_size {BATCH_SIZE} --scroll_warning_limit {SCROLL_WARNING_LIMIT} --language {LANGUAGE} --model_id {MODEL_ID}
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir -e .
+RUN python -m spacy download en_core_web_md && python -m spacy download de_core_news_md
 ```
 for the dockerized setup, use `make build && make run`
 
-# Generating Polarization and Prosociality Dicitionaries
-
-Polarization: https://chatgpt.com/share/67b22b0f-aed4-8002-bffb-2383826fef8
-Prosociality: https://chatgpt.com/share/67b22b7a-c990-8002-9544-9d3528ca5abf
 
 **Below, you can find the original README for the submission to the ranking contest:** 
 

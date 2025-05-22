@@ -6,7 +6,6 @@ import argparse
 import uvicorn
 from threading import Lock
 
-
 def create_server() -> FastAPI:
   if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Ranking Challenge')
@@ -14,7 +13,7 @@ def create_server() -> FastAPI:
     parser.add_argument('--scroll_warning_limit', type=str, help='Scroll warning limit')
     parser.add_argument('--language', type=str, default='en', help='Language for the models')
     parser.add_argument('--model_id', type=str, help='Model ID for the toxicity analyzer')
-
+    parser.add_argument('--debug', action='store_true', help='Enable debug mode')
 
   available_models = ["celadon", "jagoldz/gahd", "textdetox/xlmr-large-toxicity-classifier"]
   available_languages = ["ger", "en"]
@@ -45,15 +44,16 @@ def create_server() -> FastAPI:
   app.state.ranker = ranker
   app.state.port = args.port
   app.state.scroll_warning_limit = args.scroll_warning_limit
+  app.state.debug = args.debug
   lock = Lock()
   app.state.lock = lock
 
   @app.post('/rank_comments')
   def rank(request: Comments) -> RankingResponse:
-    print("Comment ranking request recieved", flush=True)
-    #todo remove when finished, useful for comparison for now #loveprintfdebugging
-    for item in request.comments:
-      print(item.id, flush=True)
+    if app.state.debug:
+      print("Comment ranking request recieved", flush=True)
+      for item in request.comments:
+        print(item.id, flush=True)
     with app.state.lock:
       ranked_results, insert_index = ranker.rank(request.comments, scroll_warning_limit=app.state.scroll_warning_limit)
     print("Ranking finished", flush=True)
@@ -65,7 +65,6 @@ def create_server() -> FastAPI:
 def run_server():
   app = create_server()
   uvicorn.run(app, host='0.0.0.0', port=app.state.port, log_level='warning')
-
 
 if __name__ == "__main__":
   run_server()

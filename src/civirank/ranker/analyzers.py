@@ -264,22 +264,6 @@ def scale(posts):
     # scale prosociality to be in [0, 1] for easier handling
     posts["prosociality"] = (posts["prosociality"] + 1) / 2
 
-    # # winsorize scores
-    # bottom_limit = 0.1
-    # top_limit = 0.9
-
-    # for col in ["polarization", "mtld", "prosociality"]:
-    #     posts[col] = posts[col].apply(
-    #         winsorize,
-    #         args=(posts[col].quantile(q=bottom_limit),
-    #               posts[col].quantile(q=top_limit))
-    #     )
-
-        # # rescale score to be in [0, 1] after removing outliers
-        # # this assumes that the score was in [0, 1] before winsorizing
-        # posts[col] = posts[col] - posts[col].min()
-        # posts[col] = posts[col] / posts[col].max()
-
     # revert score: high toxicity is good
     posts["toxicity"] = 1 - posts["toxicity"]
     # shift and rescale toxicity to be in [-1, 1]
